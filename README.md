@@ -1,1 +1,1 @@
-# MCW-Food-Voting
+# MCW Food Voting
