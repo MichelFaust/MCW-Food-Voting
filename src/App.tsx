@@ -1,9 +1,13 @@
-function App() {
+import { Outlet } from "react-router-dom";
+
+const App = () => {
   return (
-    <div className="flex items-center justify-center h-screen bg-blue-500 text-white text-3xl">
-      MCW Food Voting läuft! 🚀
+    <div className="h-screen flex flex-col">
+      <div className="flex-grow">
+        <Outlet />
+      </div>
     </div>
   );
-}
+};
 
 export default App;
