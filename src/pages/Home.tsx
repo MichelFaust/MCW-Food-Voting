@@ -7,8 +7,8 @@ const Container = styled.div`
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 100vw;  /* Volle Bildschirmbreite */
-  height: 100vh; /* Volle Bildschirmhöhe */
+  width: 100vw;
+  height: 100vh;
   background-color: #1a202c;
   color: white;
   position: relative;
@@ -52,9 +52,9 @@ const Home = () => {
     <Container>
       <SettingsIcon />
       <Title>MCW-FOOD-VOTING</Title>
-      <Button to="/voting">Student</Button>
-      <Button to="/voting">Teacher</Button>
-      <Button to="/voting">Guest</Button>
+      <Button to="/voting?role=student">Student</Button>
+      <Button to="/voting?role=teacher">Teacher</Button>
+      <Button to="/voting?role=guest">Guest</Button>
     </Container>
   );
 };
