@@ -1,5 +1,6 @@
 import styled from "styled-components";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 
 // Styled Components
 const Container = styled.div`
@@ -29,21 +30,21 @@ const ButtonGrid = styled.div`
   justify-content: center;
 `;
 
-const Button = styled.button`
+const Button = styled.button<{ voted: boolean }>`
   padding: 12px;
   text-align: center;
-  background-color: #2d3748;
-  color: white;
+  background-color: ${({ voted }) => (voted ? "#8b0000" : "#2d3748")};
+  color: ${({ voted }) => (voted ? "#ffffff" : "white")};
   font-size: 18px;
   font-weight: bold;
   text-decoration: none;
   border: none;
   border-radius: 8px;
-  cursor: pointer;
+  cursor: ${({ voted }) => (voted ? "not-allowed" : "pointer")};
   transition: background 0.3s;
 
   &:hover {
-    background-color: #4a5568;
+    background-color: ${({ voted }) => (voted ? "#8b0000" : "#4a5568")};
   }
 `;
 
@@ -66,10 +67,31 @@ const BackButton = styled(Link)`
 
 const Voting = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const params = new URLSearchParams(location.search);
   const role = params.get("role") || "student"; // Standard: student
 
-  // Alphabetisch sortierte Namen
+  // Zustand für Gäste aus dem Admin-Bereich
+  const [guestList, setGuestList] = useState<string[]>([]);
+  const [votedNames, setVotedNames] = useState<string[]>([]);
+
+  useEffect(() => {
+    // Hol die gespeicherten Namen aus Local Storage
+    const storedNames = JSON.parse(localStorage.getItem("votedNames") || "[]");
+    setVotedNames(storedNames);
+
+    // Hol die gespeicherten Gäste aus Local Storage
+    const storedGuests = JSON.parse(localStorage.getItem("guestList") || "[]");
+    setGuestList(storedGuests);
+  }, []);
+
+  const handleSelectName = (name: string) => {
+    if (!votedNames.includes(name)) {
+      navigate(`/vote?name=${name}&role=${role}`);
+    }
+  };
+
+  // Alphabetisch sortierte Namen inkl. Gäste (Gäste werden nur angezeigt, wenn es welche gibt!)
   const namesList = {
     student: [
       "Amalia", "Amelie", "Analena", "Aylin", "Benedikt", "Ben", "Caroline", "Dylan",
@@ -81,17 +103,22 @@ const Voting = () => {
       "Pauline", "Phil", "Richard", "Sasha", "Sofia", "Sonja", "Tim", "Valerian"
     ],
     teacher: ["Alex", "Anasthasia", "Aide", "Barbara", "Benedikt", "Büsra", "Colin", "Daniela", "Elif", "Sibylle", "Sybille", "Raj"],
-    guest: ["Noch niemand"]
+    guest: guestList.length > 0 ? guestList : []
   };
 
-  const names = namesList[role] || namesList.student; // Falls etwas schiefgeht, Default zu Studenten
+  const names = namesList[role] || namesList.student;
 
   return (
     <Container>
       <Title>Wähle deinen Namen</Title>
       <ButtonGrid>
         {names.map((name, index) => (
-          <Button key={index} onClick={() => (window.location.href = "/vote")}>
+          <Button
+            key={index}
+            voted={votedNames.includes(name)}
+            onClick={() => handleSelectName(name)}
+            disabled={votedNames.includes(name)}
+          >
             {name}
           </Button>
         ))}

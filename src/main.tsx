@@ -6,8 +6,9 @@ import "./index.css";
 
 import Home from "./pages/Home";
 import Voting from "./pages/Voting";
-import Vote from "./pages/Vote"; // ✅ Neu hinzugefügt
+import Vote from "./pages/Vote";
 import Admin from "./pages/Admin";
+import Results from "./pages/Results"; // Neu hinzugefügt
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
@@ -15,9 +16,11 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/voting" element={<Voting />} />
-        <Route path="/vote" element={<Vote />} /> {/* ✅ Hier ist die neue Weiterleitung */}
+        <Route path="/vote" element={<Vote />} />
         <Route path="/admin" element={<Admin />} />
+        <Route path="/results" element={<Results />} /> {/* Route für Ergebnisse */}
       </Routes>
+      <App />
     </Router>
   </React.StrictMode>
 );

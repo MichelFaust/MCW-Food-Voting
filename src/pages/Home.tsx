@@ -7,7 +7,7 @@ const Container = styled.div`
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 100vw;
+  width: 100vw;  
   height: 100vh;
   background-color: #1a202c;
   color: white;
@@ -39,18 +39,27 @@ const Button = styled(Link)`
   }
 `;
 
-const SettingsIcon = styled(FaCog)`
+const SettingsIcon = styled(Link)`
   position: absolute;
   top: 20px;
   right: 20px;
   font-size: 24px;
-  cursor: pointer;
+  color: white;
+  text-decoration: none;
+
+  &:hover {
+    color: #ccc;
+  }
 `;
 
 const Home = () => {
   return (
     <Container>
-      <SettingsIcon />
+      {/* Zahnrad führt jetzt zu /admin */}
+      <SettingsIcon to="/admin">
+        <FaCog />
+      </SettingsIcon>
+      
       <Title>MCW-FOOD-VOTING</Title>
       <Button to="/voting?role=student">Student</Button>
       <Button to="/voting?role=teacher">Teacher</Button>
