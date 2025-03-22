@@ -72,6 +72,11 @@ const Voting = () => {
   const params = new URLSearchParams(location.search);
   const role = params.get("role") || "student";
 
+  const [guestList, setGuestList] = useState<string[]>([]);
+  const [votedNames, setVotedNames] = useState<string[]>([]);
+
+  const apiBase = `http://${window.location.hostname}:3001`;
+
   const namesList = {
     student: [
       "Amalia", "Amelie", "Analena", "Aylin", "Benedikt", "Ben", "Caroline", "Dylan",
@@ -83,27 +88,36 @@ const Voting = () => {
       "Pauline", "Phil", "Richard", "Sasha", "Sofia", "Sonja", "Tim", "Valerian"
     ],
     teacher: ["Alex", "Anasthasia", "Aide", "Barbara", "Benedikt", "Büsra", "Colin", "Daniela", "Elif", "Sibylle", "Sybille", "Raj"],
-    guest: JSON.parse(localStorage.getItem("guestList") || "[]")
+    guest: guestList
   };
 
-  const [votedNames, setVotedNames] = useState<string[]>([]);
+  // Gäste laden
+  useEffect(() => {
+    const fetchGuests = async () => {
+      try {
+        const res = await axios.get(`${apiBase}/api/guests`);
+        setGuestList(res.data);
+      } catch (err) {
+        console.error("Fehler beim Laden der Gäste:", err);
+      }
+    };
+    fetchGuests();
+  }, [apiBase]);
 
+  // Votes laden
   useEffect(() => {
     const fetchVotes = async () => {
       try {
-        const res = await axios.get("http://192.168.2.43:3001/api/votes");
-        const names = res.data.map((vote: any) => vote.name);
-        setVotedNames(names);
+        const res = await axios.get(`${apiBase}/api/voted-names`);
+        setVotedNames(res.data);
       } catch (err) {
-        console.error("Fehler beim Abrufen der Stimmen:", err);
+        console.error("Fehler beim Abrufen der Namen:", err);
       }
     };
-
-    fetchVotes(); // Erstmal sofort abrufen
-    const interval = setInterval(fetchVotes, 3000); // dann alle 3 Sekunden
-
+    fetchVotes();
+    const interval = setInterval(fetchVotes, 3000);
     return () => clearInterval(interval);
-  }, []);
+  }, [apiBase]);
 
   const handleSelectName = (name: string) => {
     if (!votedNames.includes(name)) {
@@ -111,22 +125,26 @@ const Voting = () => {
     }
   };
 
-  const names = namesList[role] || namesList.student;
+  const names = namesList[role as keyof typeof namesList] || namesList.student;
 
   return (
     <Container>
       <Title>Wähle deinen Namen</Title>
       <ButtonGrid>
-        {names.map((name, index) => (
-          <Button
-            key={index}
-            voted={votedNames.includes(name)}
-            onClick={() => handleSelectName(name)}
-            disabled={votedNames.includes(name)}
-          >
-            {name}
-          </Button>
-        ))}
+        {names.length === 0 ? (
+          role === "guest" ? null : <p>Keine Namen gefunden.</p>
+        ) : (
+          names.map((name, index) => (
+            <Button
+              key={index}
+              voted={votedNames.includes(name)}
+              onClick={() => handleSelectName(name)}
+              disabled={votedNames.includes(name)}
+            >
+              {name}
+            </Button>
+          ))
+        )}
       </ButtonGrid>
       <BackButton to="/">⬅️ Zurück</BackButton>
     </Container>

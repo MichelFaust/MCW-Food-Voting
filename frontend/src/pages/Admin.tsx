@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 // Styled Components
 const Container = styled.div`
@@ -74,96 +75,114 @@ const Admin = () => {
   const navigate = useNavigate();
   const [password, setPassword] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [foodName, setFoodName] = useState(localStorage.getItem("foodName") || "");
-  const [foodImage, setFoodImage] = useState(localStorage.getItem("foodImage") || "");
+  const [foodName, setFoodName] = useState("");
+  const [foodImage, setFoodImage] = useState("");
   const [guestName, setGuestName] = useState("");
-  const [guestList, setGuestList] = useState(JSON.parse(localStorage.getItem("guestList") || "[]"));
+  const [guestList, setGuestList] = useState<string[]>([]);
 
-  // Passwortprüfung
+  const apiUrl = `http://${window.location.hostname}:3001`;
+
+  // ✅ Gericht & Gäste laden
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [foodRes, guestRes] = await Promise.all([
+          axios.get(`${apiUrl}/api/food`),
+          axios.get(`${apiUrl}/api/guests`),
+        ]);
+        setFoodName(foodRes.data.name || "");
+        setFoodImage(foodRes.data.image || "");
+        setGuestList(guestRes.data || []);
+      } catch (err) {
+        console.error("Fehler beim Laden:", err);
+      }
+    };
+    fetchData();
+  }, [apiUrl]);
+
   const checkPassword = () => {
-    if (password === "admin123") {
-      setIsAuthenticated(true);
-    } else {
-      alert("Falsches Passwort!");
+    if (password === "admin123") setIsAuthenticated(true);
+    else alert("Falsches Passwort!");
+  };
+
+  const saveFoodName = async () => {
+    try {
+      await axios.post(`${apiUrl}/api/food`, { name: foodName, image: foodImage });
+      alert("Gericht gespeichert!");
+    } catch {
+      alert("Fehler beim Speichern!");
     }
   };
 
-  // Gericht speichern
-  const saveFoodName = () => {
-    localStorage.setItem("foodName", foodName);
-    alert("Gericht gespeichert!");
-  };
-
-  // Bild speichern
-  const saveFoodImage = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const saveFoodImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const imageUrl = reader.result as string;
-        setFoodImage(imageUrl);
-        localStorage.setItem("foodImage", imageUrl);
-        alert("Bild gespeichert!");
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+    const formData = new FormData();
+    formData.append("image", file);
+    try {
+      const res = await axios.post(`${apiUrl}/api/food-image`, formData);
+      setFoodImage(res.data.imageUrl);
+      alert("Bild gespeichert!");
+    } catch {
+      alert("Fehler beim Hochladen!");
     }
   };
 
-  // Gast hinzufügen
-  const addGuest = () => {
+  const addGuest = async () => {
     if (guestName.trim() === "") return;
-    const updatedGuests = [...guestList, guestName];
-    setGuestList(updatedGuests);
-    localStorage.setItem("guestList", JSON.stringify(updatedGuests));
-    setGuestName("");
-    alert("Gast hinzugefügt!");
+    try {
+      await axios.post(`${apiUrl}/api/guests`, { name: guestName });
+      setGuestList([...guestList, guestName]);
+      setGuestName("");
+    } catch {
+      alert("Fehler beim Hinzufügen!");
+    }
   };
 
-  // Gäste zurücksetzen
-  const resetGuests = () => {
-    setGuestList([]);
-    localStorage.setItem("guestList", "[]");
-    alert("Gästeliste zurückgesetzt!");
+  const resetGuests = async () => {
+    try {
+      await axios.delete(`${apiUrl}/api/guests`);
+      setGuestList([]);
+      alert("Gästeliste zurückgesetzt!");
+    } catch {
+      alert("Fehler beim Zurücksetzen!");
+    }
   };
 
-  // Namen resetten
-  const resetNames = () => {
-    localStorage.removeItem("votedNames");
-    alert("Alle Namen zurückgesetzt!");
+  const resetNames = async () => {
+    const pw = prompt("Passwort eingeben:");
+    if (pw !== "admin123") return alert("Falsch!");
+    try {
+      await axios.delete(`${apiUrl}/api/voted-names`);
+      alert("Namen zurückgesetzt!");
+    } catch {
+      alert("Fehler beim Zurücksetzen!");
+    }
   };
 
-  // ✅ Abstimmung starten
   const startVoting = () => {
-    const confirmPassword = prompt("Passwort eingeben, um die Abstimmung zu starten:");
-    if (confirmPassword === "admin123") {
-      resetNames(); // Namen zurücksetzen, damit alle wieder voten können
+    const pw = prompt("Passwort?");
+    if (pw === "admin123") {
+      resetNames();
       localStorage.setItem("votingActive", "true");
       alert("Abstimmung gestartet!");
-    } else {
-      alert("Falsches Passwort!");
-    }
+    } else alert("Falsch!");
   };
 
-  // 🛑 Abstimmung beenden
   const endVoting = () => {
-    const confirmPassword = prompt("Passwort eingeben, um die Abstimmung zu beenden:");
-    if (confirmPassword === "admin123") {
+    const pw = prompt("Passwort?");
+    if (pw === "admin123") {
       localStorage.setItem("votingActive", "false");
-      alert("Abstimmung beendet & Ergebnisse gespeichert!");
-    } else {
-      alert("Falsches Passwort!");
-    }
+      alert("Abstimmung beendet!");
+    } else alert("Falsch!");
   };
 
-  // ❌ Alle Daten löschen
   const deleteAllData = () => {
-    const confirmPassword = prompt("Passwort eingeben, um ALLE Daten zu löschen:");
-    if (confirmPassword === "admin123") {
+    const pw = prompt("Passwort?");
+    if (pw === "admin123") {
       localStorage.clear();
-      alert("Alle gespeicherten Daten wurden gelöscht!");
-    } else {
-      alert("Falsches Passwort!");
-    }
+      alert("Daten gelöscht!");
+    } else alert("Falsch!");
   };
 
   return (
@@ -182,14 +201,12 @@ const Admin = () => {
         </>
       ) : (
         <>
-          {/* Abstimmung verwalten */}
           <Section>
             <Title>Abstimmung verwalten</Title>
-            <Button onClick={startVoting}>✅ Abstimmung starten</Button>
-            <Button onClick={endVoting}>🛑 Abstimmung beenden</Button>
+            <Button onClick={startVoting}>✅ Starten</Button>
+            <Button onClick={endVoting}>🛑 Beenden</Button>
           </Section>
 
-          {/* Gericht setzen */}
           <Section>
             <Title>Gericht ändern</Title>
             <Input
@@ -201,14 +218,12 @@ const Admin = () => {
             <Button onClick={saveFoodName}>Gericht speichern</Button>
           </Section>
 
-          {/* Bild hochladen */}
           <Section>
             <Title>Bild hochladen</Title>
             <input type="file" accept="image/*" onChange={saveFoodImage} />
             {foodImage && <img src={foodImage} alt="Gericht" style={{ marginTop: "10px", width: "100%" }} />}
           </Section>
 
-          {/* Gäste hinzufügen */}
           <Section>
             <Title>Gast hinzufügen</Title>
             <Input
@@ -220,7 +235,6 @@ const Admin = () => {
             <Button onClick={addGuest}>Gast speichern</Button>
           </Section>
 
-          {/* Reset-Buttons */}
           <Section>
             <Title>Verwaltung</Title>
             <Button onClick={resetNames}>🔄 Namen zurücksetzen</Button>
@@ -228,7 +242,6 @@ const Admin = () => {
             <DangerButton onClick={deleteAllData}>⚠️ ALLE Daten löschen</DangerButton>
           </Section>
 
-          {/* Ergebnisse anzeigen */}
           <Section>
             <Title>Ergebnisse</Title>
             <Button onClick={() => navigate("/results")}>📊 Ergebnisse anzeigen</Button>
@@ -236,7 +249,6 @@ const Admin = () => {
         </>
       )}
 
-      {/* Zurück */}
       <BackButton onClick={() => navigate("/")}>⬅️ Zurück</BackButton>
     </Container>
   );

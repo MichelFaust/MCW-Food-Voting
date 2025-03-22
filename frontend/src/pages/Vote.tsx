@@ -1,6 +1,6 @@
 import styled from "styled-components";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const Container = styled.div`
   display: flex;
@@ -109,20 +109,39 @@ const Vote = () => {
   const selectedName = params.get("name") || "Unbekannt";
   const role = params.get("role") || "student";
 
+  const apiUrl = `http://${window.location.hostname}:3001`;
+
   const [selectedSmiley, setSelectedSmiley] = useState<number | null>(null);
   const [selectedAdjustments, setSelectedAdjustments] = useState<string[]>([]);
+  const [foodName, setFoodName] = useState("Aktuelles Gericht");
+  const [foodImage, setFoodImage] = useState("");
 
   const smileys = ["😡", "😟", "😊", "😍"];
   const adjustments = ["Weniger salzig", "Salziger", "Weniger würzig", "Würziger", "Weniger scharf", "Schärfer", "Gut so"];
+
+  // Gerichtsdaten aus dem Backend laden
+  useEffect(() => {
+    const fetchFoodData = async () => {
+      try {
+        const res = await fetch(`${apiUrl}/api/food`);
+        const data = await res.json();
+        if (data) {
+          setFoodName(data.name || "Aktuelles Gericht");
+          setFoodImage(data.image || "");
+        }
+      } catch (error) {
+        console.error("Fehler beim Laden des Gerichts:", error);
+      }
+    };
+
+    fetchFoodData();
+  }, [apiUrl]);
 
   const toggleAdjustment = (adjustment: string) => {
     setSelectedAdjustments((prev) =>
       prev.includes(adjustment) ? prev.filter((item) => item !== adjustment) : [...prev, adjustment]
     );
   };
-
-  const foodName = localStorage.getItem("foodName") || "Aktuelles Gericht";
-  const foodImage = localStorage.getItem("foodImage") || "";
 
   const submitVote = async () => {
     if (selectedSmiley === null) {
@@ -131,7 +150,7 @@ const Vote = () => {
     }
 
     try {
-      const response = await fetch("http://192.168.2.43:3001/api/vote", {
+      const response = await fetch(`${apiUrl}/api/vote`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
