@@ -3,18 +3,17 @@ import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
-// Styled Components
 const Container = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   width: 100vw;
-  height: 100vh;
+  height: 100%;
   background-color: #1a202c;
   color: white;
-  position: relative;
   padding: 20px;
+  position: relative;
 `;
 
 const Section = styled.div`
@@ -82,23 +81,35 @@ const Admin = () => {
 
   const apiUrl = `http://${window.location.hostname}:3001`;
 
-  // ✅ Gericht & Gäste laden
+  // ✅ Food sofort beim Seitenaufruf laden
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [foodRes, guestRes] = await Promise.all([
-          axios.get(`${apiUrl}/api/food`),
-          axios.get(`${apiUrl}/api/guests`),
-        ]);
-        setFoodName(foodRes.data.name || "");
-        setFoodImage(foodRes.data.image || "");
-        setGuestList(guestRes.data || []);
+        const res = await axios.get(`${apiUrl}/api/food`);
+        setFoodName(res.data.name || "");
+        setFoodImage(res.data.image || "");
       } catch (err) {
-        console.error("Fehler beim Laden:", err);
+        console.error("Fehler beim Laden des Gerichts:", err);
       }
     };
     fetchData();
   }, [apiUrl]);
+
+  // ✅ Gäste nach Login laden
+  useEffect(() => {
+    const fetchGuests = async () => {
+      try {
+        const res = await axios.get(`${apiUrl}/api/guests`);
+        setGuestList(res.data || []);
+      } catch (err) {
+        console.error("Fehler beim Laden der Gäste:", err);
+      }
+    };
+
+    if (isAuthenticated) {
+      fetchGuests();
+    }
+  }, [isAuthenticated, apiUrl]);
 
   const checkPassword = () => {
     if (password === "admin123") setIsAuthenticated(true);
@@ -221,7 +232,13 @@ const Admin = () => {
           <Section>
             <Title>Bild hochladen</Title>
             <input type="file" accept="image/*" onChange={saveFoodImage} />
-            {foodImage && <img src={foodImage} alt="Gericht" style={{ marginTop: "10px", width: "100%" }} />}
+            {foodImage && (
+              <img
+                src={foodImage}
+                alt="Gericht"
+                style={{ marginTop: "10px", width: "100%", borderRadius: "8px" }}
+              />
+            )}
           </Section>
 
           <Section>

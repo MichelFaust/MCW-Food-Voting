@@ -4,6 +4,8 @@ const sqlite3 = require("sqlite3").verbose();
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
+const os = require("os");
+
 const app = express();
 const port = 3001;
 
@@ -11,10 +13,24 @@ app.use(cors());
 app.use(express.json());
 app.use("/uploads", express.static("uploads"));
 
-// SQLite Datenbank einrichten
+// 🧠 Lokale IP herausfinden (für Netzwerkgeräte)
+function getLocalIP() {
+  const interfaces = os.networkInterfaces();
+  for (const name of Object.keys(interfaces)) {
+    for (const iface of interfaces[name]) {
+      if (iface.family === "IPv4" && !iface.internal) return iface.address;
+    }
+  }
+  return "localhost";
+}
+const localIP = getLocalIP();
+console.log(`✅ Server läuft auf:`);
+console.log(`   http://localhost:${port}`);
+console.log(`   http://${localIP}:${port}`);
+
 const db = new sqlite3.Database("votes.db");
 
-// Upload-Ziel für Bilder
+// 📁 Upload-Ziel für Food-Bilder
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const dir = "uploads";
@@ -22,11 +38,14 @@ const storage = multer.diskStorage({
     cb(null, dir);
   },
   filename: (req, file, cb) => {
-    cb(null, "food" + path.extname(file.originalname));
+    const filename = "food" + path.extname(file.originalname);
+    console.log("📝 Bild-Dateiname generiert:", filename);
+    cb(null, filename);
   },
 });
 const upload = multer({ storage });
 
+// 📦 Tabellen anlegen
 db.serialize(() => {
   db.run(`CREATE TABLE IF NOT EXISTS votes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -51,12 +70,105 @@ db.serialize(() => {
     id INTEGER PRIMARY KEY CHECK (id = 0),
     name TEXT,
     image TEXT
-  )`);
-
-  db.run(`INSERT OR IGNORE INTO food (id, name, image) VALUES (0, '', '')`);
+  )`, () => {
+    db.run(`DELETE FROM food WHERE id != 0`, () => {
+      db.run(`INSERT OR IGNORE INTO food (id, name, image) VALUES (0, '', '')`, () => {
+        console.log("✅ food-Tabelle korrekt initialisiert (nur ID 0).");
+      });
+    });
+  });
 });
 
-// Vote speichern
+// 🧾 Middleware: Logger
+app.use((req, res, next) => {
+  console.log(`📥 Anfrage erhalten: [${req.method}] ${req.url}`);
+  next();
+});
+
+//
+// ✅ FOOD API
+//
+
+// 🔄 Gericht aktualisieren
+app.post("/api/food", (req, res) => {
+  const { name, image } = req.body;
+  console.log("📦 /api/food Payload:", { name, image });
+
+  if (name && image) {
+    db.run(`UPDATE food SET name = ?, image = ? WHERE id = 0`, [name, image], function (err) {
+      if (err) {
+        console.error("❌ Fehler beim Speichern von Name & Bild:", err.message);
+        return res.status(500).json({ error: err.message });
+      }
+      console.log("✅ Name & Bild erfolgreich gespeichert.");
+      res.json({ success: true });
+    });
+  } else if (name) {
+    db.run(`UPDATE food SET name = ? WHERE id = 0`, [name], function (err) {
+      if (err) {
+        console.error("❌ Fehler beim Speichern von Name:", err.message);
+        return res.status(500).json({ error: err.message });
+      }
+      console.log("✅ Nur Name erfolgreich gespeichert.");
+      res.json({ success: true });
+    });
+  } else if (image) {
+    db.run(`UPDATE food SET image = ? WHERE id = 0`, [image], function (err) {
+      if (err) {
+        console.error("❌ Fehler beim Speichern von Bild:", err.message);
+        return res.status(500).json({ error: err.message });
+      }
+      console.log("✅ Nur Bild erfolgreich gespeichert.");
+      res.json({ success: true });
+    });
+  } else {
+    console.warn("⚠️ Nichts zum Speichern empfangen.");
+    res.status(400).json({ error: "Kein Inhalt zum Speichern erhalten." });
+  }
+});
+
+// 📤 Food-Bild separat hochladen
+app.post("/api/food-image", upload.single("image"), (req, res) => {
+  if (!req.file) {
+    console.error("❌ Kein Bild empfangen!");
+    return res.status(400).json({ error: "Kein Bild empfangen." });
+  }
+
+  const imagePath = `${req.protocol}://${req.headers.host}/uploads/${req.file.filename}`;
+  console.log("📤 Bild empfangen:", {
+    filename: req.file.filename,
+    size: req.file.size,
+    mimetype: req.file.mimetype,
+    path: imagePath,
+  });
+
+  db.run(`UPDATE food SET image = ? WHERE id = 0`, [imagePath], (err) => {
+    if (err) {
+      console.error("❌ Fehler beim Speichern des Bildpfads in der DB:", err.message);
+      return res.status(500).json({ error: err.message });
+    }
+    console.log("✅ Bildpfad in DB gespeichert.");
+    res.json({ success: true, imageUrl: imagePath });
+  });
+});
+
+// 📄 Gericht abrufen
+app.get("/api/food", (req, res) => {
+  db.get(`SELECT name, image FROM food WHERE id = 0`, (err, row) => {
+    if (err) {
+      console.error("❌ Fehler beim Abrufen des Essens:", err.message);
+      return res.status(500).json({ error: err.message });
+    }
+    console.log("📦 food geladen:", row);
+    res.json(row || {});
+  });
+});
+
+//
+// ✅ VOTE API
+//
+
+// 📝 Vote abgeben
 app.post("/api/vote", (req, res) => {
   const { name, role, rating, adjustments } = req.body;
   const date = new Date().toISOString().split("T")[0];
@@ -75,7 +187,7 @@ app.post("/api/vote", (req, res) => {
   );
 });
 
-// Alle Votes abrufen
+// 📋 Alle Votes abrufen
 app.get("/api/votes", (req, res) => {
   const date = req.query.date;
   const query = date ? `SELECT * FROM votes WHERE date = ?` : `SELECT * FROM votes`;
@@ -87,7 +199,7 @@ app.get("/api/votes", (req, res) => {
   });
 });
 
-// Abgestimmte Namen abrufen
+// 🧠 Abgestimmte Namen abrufen
 app.get("/api/voted-names", (req, res) => {
   db.all(`SELECT name FROM votedNames`, (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
@@ -96,7 +208,7 @@ app.get("/api/voted-names", (req, res) => {
   });
 });
 
-// Abgestimmte Namen zurücksetzen
+// 🧼 Namen zurücksetzen
 app.delete("/api/voted-names", (req, res) => {
   db.run(`DELETE FROM votedNames`, (err) => {
     if (err) return res.status(500).json({ error: err.message });
@@ -104,7 +216,11 @@ app.delete("/api/voted-names", (req, res) => {
   });
 });
 
-// Gäste abrufen
+//
+// ✅ GÄSTE API
+//
+
+// 👥 Gäste abrufen
 app.get("/api/guests", (req, res) => {
   db.all(`SELECT name FROM guests`, (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
@@ -113,7 +229,7 @@ app.get("/api/guests", (req, res) => {
   });
 });
 
-// Gast hinzufügen
+// ➕ Gast hinzufügen
 app.post("/api/guests", (req, res) => {
   const { name } = req.body;
   db.run(`INSERT INTO guests (name) VALUES (?)`, [name], function (err) {
@@ -122,7 +238,7 @@ app.post("/api/guests", (req, res) => {
   });
 });
 
-// Gäste löschen
+// ❌ Gäste löschen
 app.delete("/api/guests", (req, res) => {
   db.run(`DELETE FROM guests`, (err) => {
     if (err) return res.status(500).json({ error: err.message });
@@ -130,33 +246,9 @@ app.delete("/api/guests", (req, res) => {
   });
 });
 
-// Gericht (Name & Bild) speichern
-app.post("/api/food", (req, res) => {
-  const { name, image } = req.body;
-  db.run(`UPDATE food SET name = ?, image = ? WHERE id = 0`, [name, image], (err) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json({ success: true });
-  });
-});
-
-// Gericht abrufen
-app.get("/api/food", (req, res) => {
-  db.get(`SELECT name, image FROM food WHERE id = 0`, (err, row) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(row || {});
-  });
-});
-
-// Gericht-Bild separat hochladen
-app.post("/api/food-image", upload.single("image"), (req, res) => {
-  const imagePath = `http://${req.hostname}:3001/uploads/${req.file.filename}`;
-  db.run(`UPDATE food SET image = ? WHERE id = 0`, [imagePath], (err) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json({ success: true, imageUrl: imagePath });
-  });
-});
-
-// Server starten
+//
+// ✅ SERVER START
+//
 app.listen(port, () => {
-  console.log(`✅ Server läuft auf http://localhost:${port}`);
+  console.log("🟢 Server läuft...");
 });
