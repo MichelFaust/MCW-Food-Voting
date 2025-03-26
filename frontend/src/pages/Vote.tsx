@@ -6,12 +6,14 @@ const Container = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   width: 100vw;
   height: 100vh;
   background-color: #1a202c;
   color: white;
-  position: relative;
+  padding: 20px;
+  box-sizing: border-box;
+  overflow-y: auto;
 `;
 
 const Title = styled.h1`
@@ -19,11 +21,18 @@ const Title = styled.h1`
   font-weight: bold;
   margin-bottom: 20px;
   text-align: center;
+
+  @media (max-width: 500px) {
+    font-size: 20px;
+  }
 `;
 
 const SmileyGrid = styled.div`
   display: flex;
   gap: 20px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 20px;
 `;
 
 const SmileyButton = styled.button<{ selected: boolean }>`
@@ -32,8 +41,16 @@ const SmileyButton = styled.button<{ selected: boolean }>`
   border: none;
   cursor: pointer;
   transition: font-size 0.2s;
+
   &:hover {
     font-size: 50px;
+  }
+
+  @media (max-width: 500px) {
+    font-size: ${({ selected }) => (selected ? "40px" : "32px")};
+    &:hover {
+      font-size: 40px;
+    }
   }
 `;
 
@@ -43,6 +60,7 @@ const ButtonGrid = styled.div`
   justify-content: center;
   gap: 10px;
   max-width: 600px;
+  margin-top: 10px;
 `;
 
 const Button = styled.button<{ selected: boolean }>`
@@ -52,13 +70,18 @@ const Button = styled.button<{ selected: boolean }>`
   color: white;
   font-size: 16px;
   font-weight: bold;
-  text-decoration: none;
   border: none;
   border-radius: 8px;
   cursor: pointer;
   transition: background 0.3s;
+
   &:hover {
     background-color: #4a5568;
+  }
+
+  @media (max-width: 500px) {
+    font-size: 14px;
+    padding: 6px 10px;
   }
 `;
 
@@ -73,8 +96,14 @@ const DoneButton = styled.button`
   border-radius: 8px;
   cursor: pointer;
   transition: background 0.3s;
+
   &:hover {
     background-color: #4a5568;
+  }
+
+  @media (max-width: 500px) {
+    font-size: 16px;
+    padding: 10px 16px;
   }
 `;
 
@@ -89,8 +118,14 @@ const BackButton = styled(Link)`
   text-decoration: none;
   border-radius: 8px;
   transition: background 0.3s;
+
   &:hover {
     background-color: #4a5568;
+  }
+
+  @media (max-width: 500px) {
+    font-size: 16px;
+    padding: 8px 12px;
   }
 `;
 
@@ -100,6 +135,10 @@ const Image = styled.img`
   margin-bottom: 20px;
   border-radius: 10px;
   object-fit: cover;
+
+  @media (max-width: 500px) {
+    width: 90%;
+  }
 `;
 
 const Vote = () => {
@@ -117,9 +156,16 @@ const Vote = () => {
   const [foodImage, setFoodImage] = useState("");
 
   const smileys = ["😡", "😟", "😊", "😍"];
-  const adjustments = ["Weniger salzig", "Salziger", "Weniger würzig", "Würziger", "Weniger scharf", "Schärfer", "Gut so"];
+  const adjustments = [
+    "Weniger salzig",
+    "Salziger",
+    "Weniger würzig",
+    "Würziger",
+    "Weniger scharf",
+    "Schärfer",
+    "Gut so",
+  ];
 
-  // Gerichtsdaten aus dem Backend laden
   useEffect(() => {
     const fetchFoodData = async () => {
       try {
@@ -139,7 +185,9 @@ const Vote = () => {
 
   const toggleAdjustment = (adjustment: string) => {
     setSelectedAdjustments((prev) =>
-      prev.includes(adjustment) ? prev.filter((item) => item !== adjustment) : [...prev, adjustment]
+      prev.includes(adjustment)
+        ? prev.filter((item) => item !== adjustment)
+        : [...prev, adjustment]
     );
   };
 

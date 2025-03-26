@@ -7,13 +7,18 @@ const Container = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   width: 100vw;
-  height: 100%;
+  min-height: 100vh;
   background-color: #1a202c;
   color: white;
   padding: 20px;
-  position: relative;
+  box-sizing: border-box;
+  overflow-y: auto;
+
+  @media (max-width: 500px) {
+    padding: 15px;
+  }
 `;
 
 const Section = styled.div`
@@ -21,15 +26,23 @@ const Section = styled.div`
   padding: 20px;
   margin: 15px;
   border-radius: 8px;
-  width: 80%;
+  width: 90%;
   max-width: 500px;
   text-align: center;
+
+  @media (max-width: 500px) {
+    padding: 15px;
+  }
 `;
 
 const Title = styled.h2`
   font-size: 24px;
   font-weight: bold;
   margin-bottom: 10px;
+
+  @media (max-width: 500px) {
+    font-size: 20px;
+  }
 `;
 
 const Input = styled.input`
@@ -39,6 +52,11 @@ const Input = styled.input`
   border-radius: 6px;
   border: none;
   font-size: 16px;
+
+  @media (max-width: 500px) {
+    font-size: 14px;
+    padding: 8px;
+  }
 `;
 
 const Button = styled.button`
@@ -55,19 +73,43 @@ const Button = styled.button`
   &:hover {
     background-color: #5a6780;
   }
+
+  @media (max-width: 500px) {
+    font-size: 14px;
+    padding: 8px 12px;
+  }
 `;
 
 const DangerButton = styled(Button)`
   background-color: #8b0000;
+
   &:hover {
     background-color: #a00000;
   }
 `;
 
 const BackButton = styled(Button)`
-  position: absolute;
-  bottom: 20px;
-  left: 20px;
+  margin-top: 30px;
+  background-color: #4a5568;
+
+  &:hover {
+    background-color: #5a6780;
+  }
+
+  @media (max-width: 500px) {
+    font-size: 14px;
+    padding: 8px 12px;
+  }
+`;
+
+const CenteredLogin = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 80vh;
+  width: 100%;
+  max-width: 400px;
 `;
 
 const Admin = () => {
@@ -81,7 +123,6 @@ const Admin = () => {
 
   const apiUrl = `http://${window.location.hostname}:3001`;
 
-  // ✅ Food sofort beim Seitenaufruf laden
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -95,7 +136,6 @@ const Admin = () => {
     fetchData();
   }, [apiUrl]);
 
-  // ✅ Gäste nach Login laden
   useEffect(() => {
     const fetchGuests = async () => {
       try {
@@ -171,23 +211,6 @@ const Admin = () => {
     }
   };
 
-  const startVoting = () => {
-    const pw = prompt("Passwort?");
-    if (pw === "admin123") {
-      resetNames();
-      localStorage.setItem("votingActive", "true");
-      alert("Abstimmung gestartet!");
-    } else alert("Falsch!");
-  };
-
-  const endVoting = () => {
-    const pw = prompt("Passwort?");
-    if (pw === "admin123") {
-      localStorage.setItem("votingActive", "false");
-      alert("Abstimmung beendet!");
-    } else alert("Falsch!");
-  };
-
   const deleteAllData = () => {
     const pw = prompt("Passwort?");
     if (pw === "admin123") {
@@ -196,28 +219,28 @@ const Admin = () => {
     } else alert("Falsch!");
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") checkPassword();
+  };
+
   return (
     <Container>
       <Title>Admin-Bereich</Title>
 
       {!isAuthenticated ? (
-        <>
+        <CenteredLogin>
           <Input
             type="password"
             placeholder="Passwort eingeben"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            onKeyDown={handleKeyDown}
           />
           <Button onClick={checkPassword}>Login</Button>
-        </>
+          <BackButton onClick={() => navigate("/")}>⬅️ Zurück</BackButton>
+        </CenteredLogin>
       ) : (
         <>
-          <Section>
-            <Title>Abstimmung verwalten</Title>
-            <Button onClick={startVoting}>✅ Starten</Button>
-            <Button onClick={endVoting}>🛑 Beenden</Button>
-          </Section>
-
           <Section>
             <Title>Gericht ändern</Title>
             <Input
@@ -263,10 +286,10 @@ const Admin = () => {
             <Title>Ergebnisse</Title>
             <Button onClick={() => navigate("/results")}>📊 Ergebnisse anzeigen</Button>
           </Section>
+
+          <BackButton onClick={() => navigate("/")}>⬅️ Zurück</BackButton>
         </>
       )}
-
-      <BackButton onClick={() => navigate("/")}>⬅️ Zurück</BackButton>
     </Container>
   );
 };

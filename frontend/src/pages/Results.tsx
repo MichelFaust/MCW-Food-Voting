@@ -7,18 +7,28 @@ const Container = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   width: 100vw;
   height: 100vh;
   background-color: #1a202c;
   color: white;
   padding: 20px;
+  box-sizing: border-box;
+  overflow-y: auto;
+
+  @media (max-width: 500px) {
+    padding: 15px;
+  }
 `;
 
 const Title = styled.h1`
   font-size: 32px;
   margin-bottom: 30px;
   text-align: center;
+
+  @media (max-width: 500px) {
+    font-size: 26px;
+  }
 `;
 
 const Dropdown = styled.select`
@@ -29,6 +39,11 @@ const Dropdown = styled.select`
   border: none;
   background-color: #2d3748;
   color: white;
+
+  @media (max-width: 500px) {
+    font-size: 14px;
+    padding: 8px;
+  }
 `;
 
 const ResultBox = styled.div`
@@ -38,11 +53,19 @@ const ResultBox = styled.div`
   width: 90%;
   max-width: 400px;
   text-align: left;
+
+  @media (max-width: 500px) {
+    padding: 18px;
+  }
 `;
 
 const StatLine = styled.p`
   font-size: 20px;
   margin: 10px 0;
+
+  @media (max-width: 500px) {
+    font-size: 16px;
+  }
 `;
 
 const ButtonGroup = styled.div`
@@ -50,6 +73,7 @@ const ButtonGroup = styled.div`
   flex-wrap: wrap;
   gap: 10px;
   margin-top: 20px;
+  justify-content: center;
 `;
 
 const ExportButton = styled.button`
@@ -65,6 +89,11 @@ const ExportButton = styled.button`
   &:hover {
     background-color: #5a6780;
   }
+
+  @media (max-width: 500px) {
+    font-size: 14px;
+    padding: 8px 12px;
+  }
 `;
 
 const BackButton = styled(Link)`
@@ -78,6 +107,11 @@ const BackButton = styled(Link)`
 
   &:hover {
     background-color: #5a6780;
+  }
+
+  @media (max-width: 500px) {
+    font-size: 14px;
+    padding: 8px 12px;
   }
 `;
 

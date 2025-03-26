@@ -8,27 +8,33 @@ const Container = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   width: 100vw;
   height: 100vh;
   background-color: #1a202c;
   color: white;
-  position: relative;
+  padding: 20px;
+  box-sizing: border-box;
+  overflow-y: auto;
 `;
 
 const Title = styled.h1`
   font-size: 36px;
   font-weight: bold;
   margin-bottom: 20px;
+  text-align: center;
+
+  @media (max-width: 500px) {
+    font-size: 28px;
+  }
 `;
 
 const ButtonGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
   gap: 10px;
-  max-width: 800px;
   width: 100%;
-  justify-content: center;
+  max-width: 800px;
 `;
 
 const Button = styled.button<{ voted: boolean }>`
@@ -38,7 +44,6 @@ const Button = styled.button<{ voted: boolean }>`
   color: ${({ voted }) => (voted ? "#ffffff" : "white")};
   font-size: 18px;
   font-weight: bold;
-  text-decoration: none;
   border: none;
   border-radius: 8px;
   cursor: ${({ voted }) => (voted ? "not-allowed" : "pointer")};
@@ -47,12 +52,15 @@ const Button = styled.button<{ voted: boolean }>`
   &:hover {
     background-color: ${({ voted }) => (voted ? "#8b0000" : "#4a5568")};
   }
+
+  @media (max-width: 500px) {
+    font-size: 14px;
+    padding: 10px;
+  }
 `;
 
 const BackButton = styled(Link)`
-  position: absolute;
-  bottom: 20px;
-  left: 20px;
+  margin-top: 30px;
   font-size: 18px;
   background-color: #2d3748;
   color: white;
@@ -63,6 +71,11 @@ const BackButton = styled(Link)`
 
   &:hover {
     background-color: #4a5568;
+  }
+
+  @media (max-width: 500px) {
+    font-size: 16px;
+    padding: 8px 12px;
   }
 `;
 
@@ -91,7 +104,6 @@ const Voting = () => {
     guest: guestList
   };
 
-  // Gäste laden
   useEffect(() => {
     const fetchGuests = async () => {
       try {
@@ -104,7 +116,6 @@ const Voting = () => {
     fetchGuests();
   }, [apiBase]);
 
-  // Votes laden
   useEffect(() => {
     const fetchVotes = async () => {
       try {
